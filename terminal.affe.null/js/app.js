@@ -414,7 +414,7 @@ function main() {
       }
 
       //var codepoint = (e.key || '\0').charCodeAt(0);
-      
+
       if(e.keyCode >= 48 && e.keyCode < 58) {
         /* number */
         var num = e.keyCode - 48;
@@ -427,10 +427,10 @@ function main() {
         sendTimeoutId && clearTimeout(sendTimeoutId);
         sendTimeoutId = setTimeout(send, 1000);
       }
-      
-      ShowOverlay(keys[currentKey].join(''));
 
-if(e.key == 'Backspace') {
+      ShowOverlay(keys[currentKey].join(''), currentKeyIndex);
+
+      if(e.key == 'Backspace') {
         e.preventDefault();
         if(currentKey >= 0) {
           /* User was typing something,
@@ -486,14 +486,19 @@ if(e.key == 'Backspace') {
   };
   var overlayTimeoutId;
 
-  function ShowOverlay(text) {
-    console.log('ShowOverlay', { overlay, text });
+  function ShowOverlay(text, highlight) {
+    //console.log('ShowOverlay', { overlay, text });
     overlay.style.setProperty('display', 'block');
-    overlay.innerText = text;
+
+    function tag(i) {
+      return i == highlight ? 'u' : 'span';
+    }
+
+    overlay.innerHTML = text.split('').reduce((s, ch, i) => s + `<${tag(i)}>${ch}</${tag(i)}>`, '');
     typeof overlayTimeoutId == 'number' && clearTimeout(overlayTimeoutId);
     overlayTimeoutId = setTimeout(() => {
       overlay.style.setProperty('display', 'none');
-      overlay.innerText = '';
-    }, 1000);
+      overlay.innerHTML = '';
+    }, 3000);
   }
 }

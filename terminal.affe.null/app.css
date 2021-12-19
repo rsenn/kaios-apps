@@ -58,6 +58,11 @@ html , body{
 	border-radius: 4px;
 	opacity: 60%;
 }
+#input-overlay > u {
+	text-decoration:  none;
+	color:  white;
+	background-color:  black;
+}
 
 #colorpicker-overlay {
 	background-color: black;
