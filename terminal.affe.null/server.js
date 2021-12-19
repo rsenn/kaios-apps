@@ -157,69 +157,7 @@ function main(...args) {
           const { status, ok, type } = res;
 
           console.log('proxy', { url, method, headers }, { status, ok, url, type });
-        },
-        *config(req, res) {
-          console.log('/config', { req, res });
-          yield '{}';
-        },
-        *files(req, resp) {
-          const { body, headers } = req;
-          const { 'content-type': content_type } = headers;
-          const data = JSON.parse(body);
-
-          resp.type = 'application/json';
-
-          let { dir = 'tmp', filter = '.(brd|sch|G[A-Z][A-Z])$', verbose = false, objects = false, key = 'mtime' } = data;
-          let absdir = path.realpath(dir);
-          let components = absdir.split(path.sep);
-
-          if(components.length && components[0] === '') components.shift();
-          if(components.length < 2 || components[0] != 'home') throw new Error(`Access error`);
-
-          console.log('\x1b[38;5;215m*files\x1b[0m', { dir, components, absdir });
-          console.log('\x1b[38;5;215m*files\x1b[0m', { absdir });
-
-          let names = fs.readdirSync(absdir) ?? [];
-          if(filter) {
-            const re = new RegExp(filter, 'gi');
-            names = names.filter(name => re.test(name));
-          }
-
-          let entries = names.map(file => [file, fs.statSync(`${dir}/${file}`)]);
-
-          entries = entries.reduce((acc, [file, st]) => {
-            let name = file + (st.isDirectory() ? '/' : '');
-            let obj = {
-              name
-            };
-            acc.push([
-              name,
-              Object.assign(obj, {
-                mtime: toUnixTime(st.mtime),
-                time: toUnixTime(st.ctime),
-                mode: `0${(st.mode & 0x09ff).toString(8)}`,
-                size: st.size
-              })
-            ]);
-            return acc;
-          }, []);
-
-          let cmp = {
-            string(a, b) {
-              return b[1][key].localeCompare(a[1][key]);
-            },
-            number(a, b) {
-              return b[1][key] - a[1][key];
-            }
-          }[typeof entries[0][1][key]];
-
-          entries = entries.sort(cmp);
-
-          console.log('\x1b[38;5;215m*files\x1b[0m', { entries });
-          names = entries.map(([name, obj]) => (objects ? obj : name));
-
-          yield JSON.stringify(...[names, ...(verbose ? [null, 2] : [])]);
-        }
+        }, 
       },
       ...url,
 

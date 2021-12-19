@@ -364,6 +364,7 @@ function main() {
 
   /* Connect to telnet server */
   var sock = navigator.mozTCPSocket.open('localhost', 23);
+  
   sock.onerror = function() {
     alert('connection error');
     window.onkeydown = null;
