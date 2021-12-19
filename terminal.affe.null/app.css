@@ -30,7 +30,10 @@ body {
   font-size: 12px;
   margin: 0px;
 }
-
+#text {
+  overflow-x: hidden;
+  overflow-y: auto;
+}
 #options {
   font-size: 40px;
   font-family: 'Noto Sans';

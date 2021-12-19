@@ -10,6 +10,8 @@
   var ext = navigator.engmodeExtension || navigator.kaiosExtension;
 
   if(ext) ext.startUniversalCommand('COLUMNS=20 LINES=13 busybox telnetd -b 127.0.0.1 -l /system/bin/bash', true).onsuccess = main;
+  else setTimeout(() => main(), 10);
+
   /* Starts main part of the app only when the telnet server has started
    */
 })();
@@ -19,7 +21,7 @@ if(!navigator.mozTCPSocket)
     open: function() {
       const { hostname, port, protocol } = window.location;
       const url = protocol.replace('http', 'ws') + '//' + hostname + ':' + port + '/ws';
-      let ws = new WebSocket(url);
+      let ws = (globalThis.ws = new WebSocket(url));
 
       ws.onmessage = function(event) {
         let { data } = event;
@@ -27,7 +29,7 @@ if(!navigator.mozTCPSocket)
           let str = new Uint8Array(buf).reduce((s, c) => s + String.fromCharCode(c), '');
           console.log('onmessage', str);
           if(typeof ws.ondata == 'function') {
-            ws.ondata(str);
+            ws.ondata({ data: str });
           }
         });
       };
