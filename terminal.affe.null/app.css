@@ -2,6 +2,20 @@
  * Copyright (C) 2020 Affe Null
  * See LICENSE.txt for more details.
  */
+@font-face {
+  font-family: "MiscFixed";
+  src: url(fonts/miscfs__.ttf) format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Ubuntu Mono";
+  src: url(fonts/UbuntuMono-R.ttf) format("truetype");
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
 
 html , body{
 	margin: 0px;
@@ -11,7 +25,7 @@ html , body{
 	height: 320px;
 	width: 240px;
 	overflow: scroll;
-	font-family: "Droid Sans Mono";
+	font-family: "MiscFixed";
 	font-size: 12px;
 	margin: 0px;
 }
@@ -26,6 +40,23 @@ html , body{
 	height: 320px;
 	width: 240px;
 	z-index: 1000;
+}
+
+#input-overlay {
+	font-family: "Ubuntu Mono";
+	background-color: white;
+	color:  black;
+	position: fixed;
+	bottom: 2px;
+	right: 2px;
+	min-height: 1em;
+	min-width: 1em;
+	padding: 2px;
+	z-index: 10000;
+	box-shadow:  0px 0px 2px white;
+	border: 0x solid black;
+	border-radius: 4px;
+	opacity: 60%;
 }
 
 #colorpicker-overlay {

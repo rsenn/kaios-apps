@@ -6,9 +6,11 @@
 
 /* Called by launch-telnet.js */
 function main() {
-  if(!localStorage.fgColor) localStorage.fgColor = "white";
-  if(!localStorage.bgColor) localStorage.bgColor = "black";
-  var elTerm = document.getElementById("text");
+  var overlay = document.getElementById('input-overlay');
+
+  if(!localStorage.fgColor) localStorage.fgColor = 'white';
+  if(!localStorage.bgColor) localStorage.bgColor = 'black';
+  var elTerm = document.getElementById('text');
   elTerm.style.backgroundColor = localStorage.bgColor;
   var chars = [];
   var curx = 0,
@@ -24,19 +26,19 @@ function main() {
     backgroundColor: localStorage.bgColor
   };
   var ignoreChars = 0;
-  const maxx = 20;
-  const maxy = 13;
+  const maxx = 40;
+  const maxy = 24;
   var keys = [
-    [" ", "0"],
-    [".", ",", "?", "!", "1", ";", ":", "/", "@", "-", "+", "_", "=", "$", "|", "<", ">"],
-    ["a", "b", "c", "2"],
-    ["d", "e", "f", "3"],
-    ["g", "h", "i", "4"],
-    ["j", "k", "l", "5"],
-    ["m", "n", "o", "6"],
-    ["p", "q", "r", "s", "7"],
-    ["t", "u", "v", "8"],
-    ["w", "x", "y", "z", "9"]
+    [' ', '0'],
+    ['.', ',', '?', '!', '1', ';', ':', '/', '@', '-', '+', '_', '=', '$', '|', '<', '>'],
+    ['a', 'b', 'c', '2'],
+    ['d', 'e', 'f', '3'],
+    ['g', 'h', 'i', '4'],
+    ['j', 'k', 'l', '5'],
+    ['m', 'n', 'o', '6'],
+    ['p', 'q', 'r', 's', '7'],
+    ['t', 'u', 'v', '8'],
+    ['w', 'x', 'y', 'z', '9']
   ];
   var currentKey = -1;
   var currentKeyIndex = 0;
@@ -59,22 +61,22 @@ function main() {
       textattrs.backgroundColor = localStorage.bgColor;
     } else {
       const map_code_to_color = {
-        30: "black",
-        31: "#900",
-        32: "#090",
-        33: "#f90",
-        34: "#009",
-        35: "#909",
-        36: "#099",
-        37: "#999",
-        90: "#444",
-        91: "#f44",
-        92: "#4f4",
-        93: "#ff4",
-        94: "#44f",
-        95: "#f4f",
-        96: "#4ff",
-        97: "white"
+        30: 'black',
+        31: '#900',
+        32: '#090',
+        33: '#f90',
+        34: '#009',
+        35: '#909',
+        36: '#099',
+        37: '#999',
+        90: '#444',
+        91: '#f44',
+        92: '#4f4',
+        93: '#ff4',
+        94: '#44f',
+        95: '#f4f',
+        96: '#4ff',
+        97: 'white'
       };
       if((code >= 40 && code < 48) || (code >= 100 && code < 108)) {
         textattrs.backgroundColor = map_code_to_color[code - 10];
@@ -99,8 +101,8 @@ function main() {
     elTerm.style.backgroundColor = localStorage.bgColor;
   }
   function setChar(x, y, ch) {
-    if(textattrs.bold) chars[y][x].style.fontWeight = "bold";
-    else chars[y][x].style.fontWeight = "normal";
+    if(textattrs.bold) chars[y][x].style.fontWeight = 'bold';
+    else chars[y][x].style.fontWeight = 'normal';
     if(textattrs.inverse) {
       chars[y][x].style.color = textattrs.backgroundColor;
       chars[y][x].style.backgroundColor = textattrs.color;
@@ -114,27 +116,27 @@ function main() {
     return String.fromCharCode(ch.toUpperCase().charCodeAt(0) - 0x40);
   }
   function putChar(ch, noCursorUpdate) {
-    if(ch == "\x1b") {
+    if(ch == '\x1b') {
       esc = true;
       return;
     } else if(esc) {
-      if(ch == "[") {
+      if(ch == '[') {
         esc_bracket = true;
         num = Array();
         numindex = 0;
-      } else if(ch == "(") {
+      } else if(ch == '(') {
         esc_paren_open = true;
       }
       esc = false;
     } else if(esc_paren_open) {
       esc_paren_open = false;
-      if(ch == "0") lineDrawing = true;
-      else if(ch == "B") lineDrawing = false;
+      if(ch == '0') lineDrawing = true;
+      else if(ch == 'B') lineDrawing = false;
     } else if(esc_question) {
       if(isNaN(ch)) {
         esc_question = false;
         if(num[0] == 1) {
-          cursorKeys = ch == "h";
+          cursorKeys = ch == 'h';
         }
       } else {
         if(num[0]) {
@@ -154,32 +156,32 @@ function main() {
           num[numindex] = Number(ch);
         }
         esc_bracket = true;
-      } else if(ch == ";") {
+      } else if(ch == ';') {
         numindex++;
         esc_bracket = true;
       } else {
         var val = num[0] ? num[0] : 1;
         switch (ch) {
-          case "?":
+          case '?':
             esc_question = true;
             break;
-          case "B":
+          case 'B':
             if(cury + val < maxy) cury += val;
             break;
-          case "A":
+          case 'A':
             if(cury - val >= 0) cury -= val;
             break;
-          case "C":
+          case 'C':
             if(curx + val < maxx) curx += val;
             break;
-          case "D":
+          case 'D':
             if(curx - val >= 0) curx -= val;
             break;
-          case "d":
+          case 'd':
             cury = num[0] ? num[0] - 1 : 0;
             if(cury >= maxy) cury = maxy - 1;
             break;
-          case "@":
+          case '@':
             for(var i = 0; i < val; i++) {
               for(var j = maxx - 2; j >= curx; j--) {
                 chars[cury][j + 1].innerHTML = chars[cury][j].innerHTML;
@@ -187,10 +189,10 @@ function main() {
                 chars[cury][j + 1].style.backgroundColor = chars[cury][j].style.backgroundColor;
                 chars[cury][j + 1].style.fontWeight = chars[cury][j].style.fontWeight;
               }
-              setChar(curx, cury, " ");
+              setChar(curx, cury, ' ');
             }
             break;
-          case "P":
+          case 'P':
             for(var i = 0; i < val; i++) {
               for(var j = curx; j < maxx - 1; j++) {
                 chars[cury][j].innerHTML = chars[cury][j + 1].innerHTML;
@@ -198,23 +200,23 @@ function main() {
                 chars[cury][j].style.backgroundColor = chars[cury][j + 1].style.backgroundColor;
                 chars[cury][j].style.fontWeight = chars[cury][j + 1].style.fontWeight;
               }
-              setChar(maxx - 1, cury, " ");
+              setChar(maxx - 1, cury, ' ');
             }
             break;
-          case "L":
+          case 'L':
             newLineAt(cury);
             break;
-          case "M":
+          case 'M':
             removeLineAt(cury);
             break;
-          case "H":
-          case "f":
+          case 'H':
+          case 'f':
             cury = num[0] ? num[0] - 1 : 0;
             curx = num[1] ? num[1] - 1 : 0;
             if(cury >= maxy) cury = maxy - 1;
             if(curx >= maxx) curx = maxy - 1;
             break;
-          case "J":
+          case 'J':
             var i = cury,
               end = chars.length;
             var j = curx,
@@ -229,37 +231,37 @@ function main() {
             }
             for(; i < end; i++) {
               for(; j < line_end; j++) {
-                setChar(j, i, " ");
+                setChar(j, i, ' ');
               }
               j = 0;
               line_end = maxx;
             }
             break;
-          case "K":
+          case 'K':
             var i = curx,
               end = maxx;
             if(num[0]) i = 0;
             if(num[0] == 1) end = curx;
             for(; i < end; i++) {
-              setChar(i, cury, " ");
+              setChar(i, cury, ' ');
             }
             break;
-          case "m":
+          case 'm':
             for(var i = 0; i < num.length; i++) process_attrs(num[i]);
             if(num.length == 0) process_attrs(0);
             break;
         }
       }
-    } else if(ch == "\n") {
+    } else if(ch == '\n') {
       cury++;
       if(cury == maxy) {
         newLine();
         cury--;
       }
-    } else if(ch == "\r") curx = 0;
-    else if(ch == "\b" && curx != 0) {
+    } else if(ch == '\r') curx = 0;
+    else if(ch == '\b' && curx != 0) {
       curx--;
-      chars[cury][curx].textContent = " ";
+      chars[cury][curx].textContent = ' ';
     } else if(ch.charCodeAt(0) < 0x20) return;
     else {
       if(curx == maxx) {
@@ -284,20 +286,20 @@ function main() {
     chars = chars.slice(0, line).concat([[]]).concat(chars.slice(line));
     chars.pop();
     console.log(chars);
-    var elNewLine = document.createElement("span");
+    var elNewLine = document.createElement('span');
     for(var j = 0; j < maxx; j++) {
-      var newch = document.createElement("span");
-      newch.textContent = "";
+      var newch = document.createElement('span');
+      newch.textContent = '';
       chars[line].push(newch);
       elNewLine.appendChild(newch);
     }
     elTerm.insertBefore(elNewLine, elCurrentLine);
-    elTerm.insertBefore(document.createElement("br"), elCurrentLine);
+    elTerm.insertBefore(document.createElement('br'), elCurrentLine);
     var oldcurx = curx,
       oldcury = cury;
     cury = line;
     curx = 0;
-    putStr("                    ");
+    putStr('                    ');
     curx = oldcurx;
     cury = oldcury;
     elTerm.removeChild(elTerm.lastChild);
@@ -307,20 +309,20 @@ function main() {
     var elCurrentLine = chars[line][0].parentElement;
     chars = chars.slice(0, line).concat(chars.slice(line + 1, maxy));
     chars.push([]);
-    var elNewLine = document.createElement("span");
+    var elNewLine = document.createElement('span');
     for(var j = 0; j < maxx; j++) {
-      var newch = document.createElement("span");
-      newch.textContent = "";
+      var newch = document.createElement('span');
+      newch.textContent = '';
       chars[chars.length - 1].push(newch);
       elNewLine.appendChild(newch);
     }
     elTerm.appendChild(elNewLine);
-    elTerm.appendChild(document.createElement("br"));
+    elTerm.appendChild(document.createElement('br'));
     var oldcurx = curx,
       oldcury = cury;
     cury = maxy - 1;
     curx = 0;
-    putStr("                    ");
+    putStr('                    ');
     curx = oldcurx;
     cury = oldcury;
     elTerm.removeChild(elCurrentLine.nextSibling);
@@ -332,10 +334,10 @@ function main() {
     if(cury == maxy) {
       chars.shift();
     }
-    var elNewLine = document.createElement("span");
+    var elNewLine = document.createElement('span');
     for(var j = 0; j < maxx; j++) {
-      var newch = document.createElement("span");
-      newch.textContent = "";
+      var newch = document.createElement('span');
+      newch.textContent = '';
       chars[chars.length - 1].push(newch);
       elNewLine.appendChild(newch);
     }
@@ -343,7 +345,7 @@ function main() {
       oldcury = cury;
     cury = chars.length - 1;
     curx = 0;
-    putStr("                    ");
+    putStr('                    ');
     curx = oldcurx;
     cury = oldcury;
     if(cury == maxy) {
@@ -351,7 +353,7 @@ function main() {
       elTerm.removeChild(elTerm.firstChild);
     }
     elTerm.appendChild(elNewLine);
-    elTerm.appendChild(document.createElement("br"));
+    elTerm.appendChild(document.createElement('br'));
   }
   function putStr(str) {
     for(var i = 0; i < str.length; i++) putChar(str[i]);
@@ -361,19 +363,20 @@ function main() {
   for(var i = 0; i < maxy; i++) newLine();
 
   /* Connect to telnet server */
-  var sock = navigator.mozTCPSocket.open("localhost", 23);
+  var sock = navigator.mozTCPSocket.open('localhost', 23);
   sock.onerror = function() {
-    alert("connection error");
+    alert('connection error');
     window.onkeydown = null;
     window.close();
   };
   sock.onclose = function() {
-    alert("connection closed");
+    alert('connection closed');
     window.onkeydown = null;
     window.close();
   };
   sock.ondata = function(e) {
     var data = e.data;
+    console.log('telnetRecv', data);
     var oldDataLength = data.length;
     var escIndex;
     data = data.substr(ignoreChars);
@@ -390,9 +393,11 @@ function main() {
     }
     putStr(data);
   };
+
   sock.onopen = function() {
-    console.log("connection started");
+    console.log('connection started');
     function telnetSend(ch) {
+      console.log('telnetSend', ch);
       sock.send(ch);
     }
     /* Connection started, now you can send data */
@@ -407,6 +412,9 @@ function main() {
         currentKeyIndex = 0;
         currentKey = -1;
       }
+
+      //var codepoint = (e.key || '\0').charCodeAt(0);
+      
       if(e.keyCode >= 48 && e.keyCode < 58) {
         /* number */
         var num = e.keyCode - 48;
@@ -419,7 +427,10 @@ function main() {
         sendTimeoutId && clearTimeout(sendTimeoutId);
         sendTimeoutId = setTimeout(send, 1000);
       }
-      if(e.key == "Backspace") {
+      
+      ShowOverlay(keys[currentKey].join(''));
+
+if(e.key == 'Backspace') {
         e.preventDefault();
         if(currentKey >= 0) {
           /* User was typing something,
@@ -427,50 +438,62 @@ function main() {
           clearTimeout(sendTimeoutId);
           currentKeyIndex = 0;
           currentKey = -1;
-        } else telnetSend("\b");
+        } else telnetSend('\b');
       }
-      if(e.key == "Enter") {
+      if(e.key == 'Enter') {
         if(currentKey >= 0) send();
-        telnetSend("\n");
+        telnetSend('\n');
       }
-      if(e.key == "Call") {
+      if(e.key == 'Call') {
         /* Toggle control */
         if(currentKey >= 0) send();
         control = !control;
       }
-      if(e.key == "SoftLeft") {
+      if(e.key == 'SoftLeft') {
         /* Tab */
         if(currentKey >= 0) send();
-        telnetSend("\t");
+        telnetSend('\t');
       }
-      if(e.key == "#") {
+      if(e.key == '#') {
         /* Toggle uppercase */
         if(currentKey >= 0) send();
         uc = !uc;
       }
-      if(e.key == "*") {
+      if(e.key == '*') {
         /* Options */
         if(currentKey >= 0) send();
         showOptions(telnetSend, recolorTerminal);
       }
       if(/Arrow.*/.test(e.key)) {
         if(currentKey >= 0) send();
-        var k = cursorKeys ? "0" : "[";
+        var k = cursorKeys ? '0' : '[';
         switch (e.key) {
-          case "ArrowUp":
-            telnetSend("\x1b" + k + "A");
+          case 'ArrowUp':
+            telnetSend('\x1b' + k + 'A');
             break;
-          case "ArrowDown":
-            telnetSend("\x1b" + k + "B");
+          case 'ArrowDown':
+            telnetSend('\x1b' + k + 'B');
             break;
-          case "ArrowLeft":
-            telnetSend("\x1b" + k + "D");
+          case 'ArrowLeft':
+            telnetSend('\x1b' + k + 'D');
             break;
-          case "ArrowRight":
-            telnetSend("\x1b" + k + "C");
+          case 'ArrowRight':
+            telnetSend('\x1b' + k + 'C');
             break;
         }
       }
     };
   };
+  var overlayTimeoutId;
+
+  function ShowOverlay(text) {
+    console.log('ShowOverlay', { overlay, text });
+    overlay.style.setProperty('display', 'block');
+    overlay.innerText = text;
+    typeof overlayTimeoutId == 'number' && clearTimeout(overlayTimeoutId);
+    overlayTimeoutId = setTimeout(() => {
+      overlay.style.setProperty('display', 'none');
+      overlay.innerText = '';
+    }, 1000);
+  }
 }

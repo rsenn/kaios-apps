@@ -6,11 +6,11 @@
 
 /* Fetch the special characters for the line-drawing character set. */
 var specialCharacters;
-!function(){
-	var xhr = new XMLHttpRequest();
-	xhr.open("GET", "special-characters.json", true);
-	xhr.send();
-	xhr.onload = function(){
-		specialCharacters = JSON.parse(xhr.responseText);
-	}
-}();
+!(function () {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', 'special-characters.json', true);
+  xhr.send();
+  xhr.onload = function() {
+    specialCharacters = JSON.parse(xhr.responseText);
+  };
+})();
