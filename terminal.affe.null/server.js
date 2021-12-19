@@ -16,6 +16,8 @@ import * as rpc2 from 'rpc';
 
 globalThis.fs = fs;
 
+let cli;
+
 function ReadJSON(filename) {
   let data = fs.readFileSync(filename, 'utf-8');
 
@@ -84,28 +86,23 @@ function main(...args) {
   let [prefix, suffix] = name.split(' ');
 
   let repl = new REPL(`\x1b[38;5;165m${prefix} \x1b[38;5;39m${suffix}\x1b[0m`, fs, false);
-
   repl.historyLoad(null, false);
-
   repl.help = () => {};
   let { log } = console;
   repl.show = arg => std.puts((typeof arg == 'string' ? arg : inspect(arg, globalThis.console.options)) + '\n');
-
   repl.cleanup = () => {
     repl.readlineRemovePrompt();
     let numLines = repl.historySave();
-
     repl.printStatus(`EXIT (wrote ${numLines} history entries)`, false);
-
     std.exit(0);
   };
 
   console.log = repl.printFunction(log);
 
-  let cli = (globalThis.sock = new rpc.Socket(`${address}:${port}`, rpc[`RPC${server ? 'Server' : 'Client'}Connection`], +params.verbose));
+  /*  let cli = (globalThis.sock = new rpc.Socket(`${address}:${port}`, rpc[`RPC${server ? 'Server' : 'Client'}Connection`], +params.verbose));
 
   cli.register({ Socket, Worker: os.Worker, Repeater, REPL, EventEmitter });
-
+*/
   let connections = new Set();
   const createWS = (globalThis.createWS = (url, callbacks, listen) => {
     console.log('createWS', { url, callbacks, listen });
@@ -157,7 +154,7 @@ function main(...args) {
           const { status, ok, type } = res;
 
           console.log('proxy', { url, method, headers }, { status, ok, url, type });
-        }, 
+        }
       },
       ...url,
 
@@ -189,7 +186,21 @@ function main(...args) {
       ...(url && url.host ? url : {})
     });
   });
-  globalThis[['connection', 'listener'][+listen]] = cli;
+
+  cli = createWS(
+    { host: address, port },
+    {
+      onConnect(ws, req) {
+        console.log('onConnect', { ws, req });
+      },
+      onClose(ws, ...args) {
+        console.log('onClose', { ws, args });
+      }
+    },
+    listen
+  );
+
+  /*globalThis[['connection', 'listener'][+listen]] = cli;
 
   define(globalThis, {
     get connections() {
@@ -214,13 +225,13 @@ function main(...args) {
     WriteJSON
   });
 
-  define(globalThis, listen ? { server: cli, cli } : { client: cli, cli });
+  define(globalThis, listen ? { server: cli, cli } : { client: cli, cli });*/
   delete globalThis.DEBUG;
   Object.defineProperty(globalThis, 'DEBUG', { get: DebugFlags });
 
-  if(listen) cli.listen(createWS, os);
+  /*if(listen) cli=createWS(.listen(createWS, os);
   else cli.connect(createWS, os);
-
+*/
   function quit(why) {
     console.log(`quit('${why}')`);
 
