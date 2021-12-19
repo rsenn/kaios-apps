@@ -259,7 +259,7 @@ function main() {
         newLine();
         cury--;
       }
-    } else if(ch == '\r' || ch == '\x07') curx = 0;
+    } else if(ch == '\r'/* || ch == '\x07'*/) curx = 0;
     else if(ch == '\b' && curx != 0) {
       curx--;
       chars[cury][curx].textContent = ' ';
@@ -518,7 +518,7 @@ function main() {
                 telnetSend('\x1b' + k + 'C');
                 break;
             }
-          } else {
+          } else if(key != 'AltGraph') {
             telnetSend(keyCode < 0x20 ? String.fromCharCode(keyCode) : key);
           }
         };
