@@ -457,7 +457,7 @@ function main() {
         /* Toggle control */
         if(currentKey >= 0) send();
         control = !control;
-controlIndicator.style.setProperty('display', control ? 'block' : 'none');
+        controlIndicator.style.setProperty('display', control ? 'block' : 'none');
       }
       if(e.key == 'SoftLeft') {
         /* Tab */
@@ -505,7 +505,10 @@ controlIndicator.style.setProperty('display', control ? 'block' : 'none');
           return i == highlight ? 'u' : 'span';
         }
 
-        overlay.innerHTML =  text.split('').reduce((s, ch, i) => s + `<${tag(i)}>${ch}</${tag(i)}>`, '');
+        overlay.innerHTML = text
+          .split('')
+          .map(ch => (/^\s$/.test(ch) ? '&nbsp;' : ch))
+          .reduce((s, ch, i) => s + `<${tag(i)}>${ch}</${tag(i)}>`, '');
         typeof overlayTimeoutId == 'number' && clearTimeout(overlayTimeoutId);
         overlayTimeoutId = setTimeout(() => {
           setDisplay('none');

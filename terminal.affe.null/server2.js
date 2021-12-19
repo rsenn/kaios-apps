@@ -168,7 +168,7 @@ function main(...args) {
           onward.ndelay(true);
 
           let ret = onward.connect(remote);
-          console.log('ret', ret);
+          console.log('connect', ret);
 
           os.setWriteHandler(onward.fd, () => {
             console.log('connected', onward.fd);
@@ -177,10 +177,10 @@ function main(...args) {
             os.setReadHandler(onward.fd, () => {
               let buf = new ArrayBuffer(1024);
               let ret = os.read(onward.fd, buf, 0, 1024);
-              console.log('ret', ret);
+              //console.log('read', ret);
               if(ret > 0) {
                 ret = ws.send(buf.slice(0, ret), 0, ret);
-                console.log('ret', ret);
+                //console.log('sent', ret);
               } else {
                 os.setReadHandler(onward.fd, null);
               }
@@ -212,7 +212,9 @@ function main(...args) {
           let buf = toArrayBuffer(data);
           console.log('onMessage', { data, buf });
           let ret = os.write(onward.fd, buf, 0, buf.byteLength);
-          console.log('written', ret);
+
+          if(ret >= 0) console.log('written', ret);
+          else console.log('error:', std.strerror(-ret));
         },
         onFd(fd, rd, wr) {
           os.setReadHandler(fd, rd);
