@@ -20,17 +20,20 @@
 html,
 body {
   margin: 0px;
+  width: 100vw;
+  height: 100vh;
 }
 
 #text {
-  height: 320px;
-  width: 240px;
-  overflow: scroll;
+  height: 100%;
+  width: 100%;
+  /* overflow: scroll;*/
   font-family: 'MiscFixed';
   font-size: 12px;
-  margin: 0px;
 }
 #text {
+  margin: 1px;
+  color: white;
   overflow-x: hidden;
   overflow-y: auto;
 }
@@ -65,13 +68,11 @@ body {
   box-shadow: 0px 0px 2px white;
   border: 0x solid black;
   border-radius: 4px;
-  opacity: 60%;
+  opacity: 0.8;
   margin: 2px;
 }
 
 #input-control {
-  fill: #fff;
-  stroke: #fff;
   background: #000;
   height: 1em;
 }

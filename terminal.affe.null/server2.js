@@ -170,22 +170,25 @@ function main(...args) {
           let ret = onward.connect(remote);
           console.log('connect', ret);
 
-          os.setWriteHandler(onward.fd, () => {
-            console.log('connected', onward.fd);
-            os.setWriteHandler(onward.fd, null);
+          os.setWriteHandler(
+            onward.fd,
+            once(() => {
+              console.log('connected', onward.fd);
+              os.setWriteHandler(onward.fd, null);
 
-            os.setReadHandler(onward.fd, () => {
-              let buf = new ArrayBuffer(1024);
-              let ret = os.read(onward.fd, buf, 0, 1024);
-              //console.log('read', ret);
-              if(ret > 0) {
-                ret = ws.send(buf.slice(0, ret), 0, ret);
-                //console.log('sent', ret);
-              } else {
-                os.setReadHandler(onward.fd, null);
-              }
-            });
-          });
+              os.setReadHandler(onward.fd, () => {
+                let buf = new ArrayBuffer(1024);
+                let ret = os.read(onward.fd, buf, 0, 1024);
+                //console.log('read', ret);
+                if(ret > 0) {
+                  ret = ws.send(buf.slice(0, ret), 0, ret);
+                  //console.log('sent', ret);
+                } else {
+                  os.setReadHandler(onward.fd, null);
+                }
+              });
+            })
+          );
 
           ws.sendMessage = function(msg) {
             let ret = this.send(JSON.stringify(msg));
@@ -210,11 +213,12 @@ function main(...args) {
         onMessage(ws, data) {
           let { onward } = ws;
           let buf = toArrayBuffer(data);
-          console.log('onMessage', { data, buf });
+          // console.log('onMessage', { data, buf });
           let ret = os.write(onward.fd, buf, 0, buf.byteLength);
 
-          if(ret >= 0) console.log('written', ret);
-          else console.log('error:', std.strerror(-ret));
+          if(ret >= 0) {
+            //console.log('written', ret);
+          } else console.log('error:', std.strerror(-ret));
         },
         onFd(fd, rd, wr) {
           os.setReadHandler(fd, rd);

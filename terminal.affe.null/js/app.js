@@ -27,8 +27,8 @@ function main() {
     backgroundColor: localStorage.bgColor
   };
   var ignoreChars = 0;
-  const maxx = 40;
-  const maxy = 24;
+  const maxx = Math.floor(elTerm.clientWidth / 6);
+  const maxy = Math.floor(elTerm.clientHeight / 13);
   var keys = [
     [' ', '0'],
     ['.', ',', '?', '!', '1', ';', ':', '/', '@', '-', '+', '_', '=', '$', '|', '<', '>'],
