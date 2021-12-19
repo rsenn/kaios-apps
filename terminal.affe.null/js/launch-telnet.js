@@ -16,6 +16,8 @@
    */
 })();
 
+globalThis.KAIOS = navigator.mozTCPSocket;
+
 if(!navigator.mozTCPSocket)
   navigator.mozTCPSocket = {
     open: function() {
@@ -26,8 +28,9 @@ if(!navigator.mozTCPSocket)
       ws.onmessage = function(event) {
         let { data } = event;
         data.arrayBuffer().then(buf => {
-          let str = new Uint8Array(buf).reduce((s, c) => s + String.fromCharCode(c), '');
-          console.log('onmessage', str);
+          let chars = new Uint8Array(buf);
+          // console.log('onmessage', chars);
+          let str = (globalThis.str = chars.reduce((s, c) => s + String.fromCharCode(c), ''));
           if(typeof ws.ondata == 'function') {
             ws.ondata({ data: str });
           }

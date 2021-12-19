@@ -259,7 +259,7 @@ function main() {
         newLine();
         cury--;
       }
-    } else if(ch == '\r') curx = 0;
+    } else if(ch == '\r' || ch == '\x07') curx = 0;
     else if(ch == '\b' && curx != 0) {
       curx--;
       chars[cury][curx].textContent = ' ';
@@ -378,7 +378,7 @@ function main() {
   };
   sock.ondata = function(e) {
     var data = e.data;
-    console.log('telnetRecv', data);
+    //console.log('telnetRecv', data);
     var oldDataLength = data.length;
     var escIndex;
     data = data.substr(ignoreChars);
@@ -403,119 +403,145 @@ function main() {
       sock.send(ch);
     }
     /* Connection started, now you can send data */
-    window.onkeydown = function(e) {
-      function send() {
-        if(currentKey != -1 && keys[currentKey] && keys[currentKey][currentKeyIndex]) {
-          if(control) {
-            control = false;
-            telnetSend(ctrl(keys[currentKey][currentKeyIndex]));
-          } else {
-            telnetSend(uc ? keys[currentKey][currentKeyIndex].toUpperCase() : keys[currentKey][currentKeyIndex]);
+
+    window.onkeydown = KAIOS
+      ? function(e) {
+          function send() {
+            if(currentKey != -1 && keys[currentKey] && keys[currentKey][currentKeyIndex]) {
+              if(control) {
+                control = false;
+                telnetSend(ctrl(keys[currentKey][currentKeyIndex]));
+              } else {
+                telnetSend(uc ? keys[currentKey][currentKeyIndex].toUpperCase() : keys[currentKey][currentKeyIndex]);
+              }
+            }
+            currentKeyIndex = 0;
+            currentKey = -1;
+          }
+
+          //var codepoint = (e.key || '\0').charCodeAt(0);
+
+          if(e.keyCode >= 48 && e.keyCode < 58) {
+            /* number */
+            var num = e.keyCode - 48;
+            if(currentKey == num) currentKeyIndex = (currentKeyIndex + 1) % keys[num].length;
+            else {
+              if(currentKey >= 0) send();
+              currentKey = num;
+              currentKeyIndex = 0;
+            }
+            sendTimeoutId && clearTimeout(sendTimeoutId);
+            sendTimeoutId = setTimeout(send, 1000);
+          }
+          if(currentKey != -1 && keys[currentKey]) {
+            let a = keys[currentKey];
+            ShowOverlay(a.join(''), currentKeyIndex);
+          }
+          if(e.key == 'Backspace') {
+            e.preventDefault();
+            if(currentKey >= 0) {
+              /* User was typing something,
+               * clear it */
+              clearTimeout(sendTimeoutId);
+              currentKeyIndex = 0;
+              currentKey = -1;
+            } else {
+              telnetSend('\x08');
+              ShowOverlay('Backspace');
+            }
+          }
+          if(e.key == 'Enter') {
+            if(currentKey >= 0) send();
+            telnetSend('\n');
+            ShowOverlay('Enter');
+          }
+          if(e.key == 'Call') {
+            /* Toggle control */
+            if(currentKey >= 0) send();
+            control = !control;
+            controlIndicator.style.setProperty('display', control ? 'block' : 'none');
+          }
+          if(e.key == 'SoftLeft') {
+            /* Tab */
+            if(currentKey >= 0) send();
+            telnetSend('\t');
+            ShowOverlay('Tab');
+          }
+          if(e.key == '#') {
+            /* Toggle uppercase */
+            if(currentKey >= 0) send();
+            uc = !uc;
+            if(uc) ShowOverlay('UC');
+          }
+          if(e.key == '*') {
+            /* Options */
+            if(currentKey >= 0) send();
+            showOptions(telnetSend, recolorTerminal);
+          }
+          if(/Arrow.*/.test(e.key)) {
+            if(currentKey >= 0) send();
+            var k = cursorKeys ? '0' : '[';
+            switch (e.key) {
+              case 'ArrowUp':
+                telnetSend('\x1b' + k + 'A');
+                break;
+              case 'ArrowDown':
+                telnetSend('\x1b' + k + 'B');
+                break;
+              case 'ArrowLeft':
+                telnetSend('\x1b' + k + 'D');
+                break;
+              case 'ArrowRight':
+                telnetSend('\x1b' + k + 'C');
+                break;
+            }
+            ShowOverlay(e.key.replace('Arrow', ''));
           }
         }
-        currentKeyIndex = 0;
-        currentKey = -1;
+      : function(e) {
+          const { key, keyCode, code, ctrlKey, altKey, shiftKey } = e;
+          //console.log('keydown', {  key, keyCode,code,ctrlKey,altKey,shiftKey });
+          if(/Arrow.*/.test(e.key)) {
+            if(currentKey >= 0) send();
+            var k = cursorKeys ? '0' : '[';
+            switch (e.key) {
+              case 'ArrowUp':
+                telnetSend('\x1b' + k + 'A');
+                break;
+              case 'ArrowDown':
+                telnetSend('\x1b' + k + 'B');
+                break;
+              case 'ArrowLeft':
+                telnetSend('\x1b' + k + 'D');
+                break;
+              case 'ArrowRight':
+                telnetSend('\x1b' + k + 'C');
+                break;
+            }
+          } else {
+            telnetSend(keyCode < 0x20 ? String.fromCharCode(keyCode) : key);
+          }
+        };
+
+    function ShowOverlay(text, highlight) {
+      const setDisplay = value => overlay.style.setProperty('display', value);
+
+      setDisplay('block');
+
+      function tag(i) {
+        return i == highlight ? 'u' : 'span';
       }
 
-      //var codepoint = (e.key || '\0').charCodeAt(0);
-
-      if(e.keyCode >= 48 && e.keyCode < 58) {
-        /* number */
-        var num = e.keyCode - 48;
-        if(currentKey == num) currentKeyIndex = (currentKeyIndex + 1) % keys[num].length;
-        else {
-          if(currentKey >= 0) send();
-          currentKey = num;
-          currentKeyIndex = 0;
-        }
-        sendTimeoutId && clearTimeout(sendTimeoutId);
-        sendTimeoutId = setTimeout(send, 1000);
-      }
-      if(currentKey != -1 && keys[currentKey]) {
-        let a = keys[currentKey];
-        ShowOverlay(a.join(''), currentKeyIndex);
-      }
-      if(e.key == 'Backspace') {
-        e.preventDefault();
-        if(currentKey >= 0) {
-          /* User was typing something,
-           * clear it */
-          clearTimeout(sendTimeoutId);
-          currentKeyIndex = 0;
-          currentKey = -1;
-        } else {
-          telnetSend('\x08');
-          ShowOverlay('Backspace');
-        }
-      }
-      if(e.key == 'Enter') {
-        if(currentKey >= 0) send();
-        telnetSend('\n');
-        ShowOverlay('Enter');
-      }
-      if(e.key == 'Call') {
-        /* Toggle control */
-        if(currentKey >= 0) send();
-        control = !control;
-        controlIndicator.style.setProperty('display', control ? 'block' : 'none');
-      }
-      if(e.key == 'SoftLeft') {
-        /* Tab */
-        if(currentKey >= 0) send();
-        telnetSend('\t');
-        ShowOverlay('Tab');
-      }
-      if(e.key == '#') {
-        /* Toggle uppercase */
-        if(currentKey >= 0) send();
-        uc = !uc;
-        if(uc) ShowOverlay('UC');
-      }
-      if(e.key == '*') {
-        /* Options */
-        if(currentKey >= 0) send();
-        showOptions(telnetSend, recolorTerminal);
-      }
-      if(/Arrow.*/.test(e.key)) {
-        if(currentKey >= 0) send();
-        var k = cursorKeys ? '0' : '[';
-        switch (e.key) {
-          case 'ArrowUp':
-            telnetSend('\x1b' + k + 'A');
-            break;
-          case 'ArrowDown':
-            telnetSend('\x1b' + k + 'B');
-            break;
-          case 'ArrowLeft':
-            telnetSend('\x1b' + k + 'D');
-            break;
-          case 'ArrowRight':
-            telnetSend('\x1b' + k + 'C');
-            break;
-        }
-        ShowOverlay(e.key.replace('Arrow', ''));
-      }
-
-      function ShowOverlay(text, highlight) {
-        const setDisplay = value => overlay.style.setProperty('display', value);
-
-        setDisplay('block');
-
-        function tag(i) {
-          return i == highlight ? 'u' : 'span';
-        }
-
-        overlay.innerHTML = text
-          .split('')
-          .map(ch => (/^\s$/.test(ch) ? '&nbsp;' : ch))
-          .reduce((s, ch, i) => s + `<${tag(i)}>${ch}</${tag(i)}>`, '');
-        typeof overlayTimeoutId == 'number' && clearTimeout(overlayTimeoutId);
-        overlayTimeoutId = setTimeout(() => {
-          setDisplay('none');
-          overlay.innerHTML = '';
-        }, 3000);
-      }
-    };
+      overlay.innerHTML = text
+        .split('')
+        .map(ch => (/^\s$/.test(ch) ? '&nbsp;' : ch))
+        .reduce((s, ch, i) => s + `<${tag(i)}>${ch}</${tag(i)}>`, '');
+      typeof overlayTimeoutId == 'number' && clearTimeout(overlayTimeoutId);
+      overlayTimeoutId = setTimeout(() => {
+        setDisplay('none');
+        overlay.innerHTML = '';
+      }, 3000);
+    }
   };
 }
 var overlayTimeoutId;
