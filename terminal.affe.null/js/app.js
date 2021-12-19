@@ -259,8 +259,8 @@ function main() {
         newLine();
         cury--;
       }
-    } else if(ch == '\r'/* || ch == '\x07'*/) curx = 0;
-    else if(ch == '\b' && curx != 0) {
+    } else if(ch == '\r') curx = 0;
+    else if(ch == '\x07' && curx != 0) {
       curx--;
       chars[cury][curx].textContent = ' ';
     } else if(ch.charCodeAt(0) < 0x20) return;
@@ -393,13 +393,14 @@ function main() {
       }
       data = data.substr(3);
     }
+    console.log(`telnetRecv:'${data.replace(/\n/g, '\\n').replace(/\x1b/g, '\\x1b').replace(/\x07/g, '\\x07')}'`);
     putStr(data);
   };
 
   sock.onopen = function() {
     console.log('connection started');
     function telnetSend(ch) {
-      console.log('telnetSend', ch);
+      console.log(`telnetSend:'${ch}'`);
       sock.send(ch);
     }
     /* Connection started, now you can send data */

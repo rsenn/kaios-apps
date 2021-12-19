@@ -29,8 +29,9 @@ if(!navigator.mozTCPSocket)
         let { data } = event;
         data.arrayBuffer().then(buf => {
           let chars = new Uint8Array(buf);
-          // console.log('onmessage', chars);
-          let str = (globalThis.str = chars.reduce((s, c) => s + String.fromCharCode(c), ''));
+          //console.log('onmessage', chars);
+          let str = (globalThis.str = chars.reduce((s, c) => s + String.fromCodePoint(c), ''));
+          // console.log('onmessage', str);
           if(typeof ws.ondata == 'function') {
             ws.ondata({ data: str });
           }
