@@ -1,19 +1,19 @@
 import * as std from 'std';
 import * as os from 'os';
-import * as util from 'util';
 import path from 'path';
 import { Console } from 'console';
 import REPL from 'repl';
 import inspect from 'inspect';
-import { extendArray, ArrayExtensions, SyscallError, errors, types, hasBuiltIn, format, formatWithOptions, assert, setInterval, clearInterval, memoize, once, waitFor, define, weakAssign, getConstructorChain, hasPrototype, filter, curry, split, unique, getFunctionArguments, randInt, toBigInt, lazyProperty, getOpt, toUnixTime, unixTime, fromUnixTime, ansiStyles } from 'util';
+import { JS_EVAL_FLAG_BACKTRACE_BARRIER, Location, dupArrayBuffer, escape, getPrototypeChain, isArray, isBigDecimal, isBigFloat, isBigInt, isBool, isCFunction, isConstructor, isEmptyString, isError, isException, isExtensible, isFunction, isHTMLDDA, isInstanceOf, isInteger, isJobPending, isLiveObject, isNull, isNumber, isObject, isRegisteredClass, isString, isSymbol, isUncatchableError, isUndefined, isUninitialized, isArrayBuffer, rand, toArrayBuffer, toString, watch, extendArray, ArrayExtensions, SyscallError, errors, types, hasBuiltIn, format, formatWithOptions, assert, setInterval, clearInterval, memoize, once, waitFor, define, weakAssign, getConstructorChain, hasPrototype, filter, curry, split, unique, getFunctionArguments, randInt, toBigInt, lazyProperty, getOpt, toUnixTime, unixTime, fromUnixTime, ansiStyles } from 'util';
 import * as fs from 'fs';
 import * as net from 'net';
-import { Socket } from 'sockets';
 import { EventEmitter } from 'events';
 import { Repeater } from 'repeater';
 
 import rpc from 'rpc';
 import * as rpc2 from 'rpc';
+
+import { socklen_t, SockAddr, Socket, AF_INET, SOCK_STREAM, IPPROTO_IP, IPPROTO_TCP, O_NONBLOCK, SO_ERROR, SO_REUSEPORT, SO_REUSEADDR, SOL_SOCKET } from 'sockets';
 
 globalThis.fs = fs;
 
@@ -27,7 +27,7 @@ function ReadJSON(filename) {
 }
 
 function WriteFile(name, data, verbose = true) {
-  if(Util.isGenerator(data)) {
+  if(types.isGeneratorFunction(data)) {
     let fd = fs.openSync(name, os.O_WRONLY | os.O_TRUNC | os.O_CREAT, 0x1a4);
     let r = 0;
     for(let item of data) {
@@ -37,8 +37,8 @@ function WriteFile(name, data, verbose = true) {
     let stat = fs.statSync(name);
     return stat?.size;
   }
-  if(Util.isIterator(data)) data = [...data];
-  if(Util.isArray(data)) data = data.join('\n');
+  if(types.isIterator(data)) data = [...data];
+  if(types.isArray(data)) data = data.join('\n');
 
   if(typeof data == 'string' && !data.endsWith('\n')) data += '\n';
   let ret = fs.writeFileSync(name, data);
@@ -55,18 +55,13 @@ function StartREPL(prefix = path.basename(process.argv[1], '.js'), suffix = '') 
 
   repl.historyLoad(null, false);
   repl.inspectOptions = { ...console.options, compact: 2 };
-
   repl.help = () => {};
   let { log } = console;
   repl.show = arg => std.puts((typeof arg == 'string' ? arg : inspect(arg, repl.inspectOptions)) + '\n');
-
   repl.cleanup = () => {
     repl.readlineRemovePrompt();
-    Terminal.mousetrackingDisable();
     let numLines = repl.historySave();
-
     repl.printStatus(`EXIT (wrote ${numLines} history entries)`, false);
-
     std.exit(0);
   };
 
@@ -79,14 +74,14 @@ function StartREPL(prefix = path.basename(process.argv[1], '.js'), suffix = '') 
 }
 
 function main(...args) {
-  console.log('process.argv',process.argv);
+  console.log('process.argv', process.argv);
   const base = path.basename(process.argv[1], '.js').replace(/\.[a-z]*$/, '');
 
   const config = ReadJSON(`.${base}-config`) ?? {};
   globalThis.console = new Console(std.err, {
     inspectOptions: { compact: 2, customInspect: true }
   });
-  let params = util.getOpt(
+  let params = getOpt(
     {
       verbose: [false, (a, v) => (v | 0) + 1, 'v'],
       listen: [false, null, 'l'],
@@ -166,6 +161,31 @@ function main(...args) {
         ...callbacks,
         onConnect(ws, req) {
           console.log('debugger-server', { ws, req });
+          let onward = (ws.onward = new Socket(AF_INET, SOCK_STREAM, IPPROTO_TCP));
+          let remote = new SockAddr(AF_INET, '127.0.0.1', 23);
+
+          onward.setsockopt(SOL_SOCKET, SO_REUSEADDR, [1]);
+          onward.ndelay(true);
+
+          let ret = onward.connect(remote);
+          console.log('ret', ret);
+
+          os.setWriteHandler(onward.fd, () => {
+            console.log('connected', onward.fd);
+            os.setWriteHandler(onward.fd, null);
+
+            os.setReadHandler(onward.fd, () => {
+              let buf = new ArrayBuffer(1024);
+              let ret = os.read(onward.fd, buf, 0, 1024);
+              console.log('ret', ret);
+              if(ret > 0) {
+                ret = ws.send(buf.slice(0, ret), 0, ret);
+                console.log('ret', ret);
+              } else {
+                os.setReadHandler(onward.fd, null);
+              }
+            });
+          });
 
           ws.sendMessage = function(msg) {
             let ret = this.send(JSON.stringify(msg));
@@ -188,146 +208,11 @@ function main(...args) {
           return rsp;
         },
         onMessage(ws, data) {
-          console.log('onMessage', ws, data);
-
-          handleCommand(ws, data);
-
-          function handleCommand(ws, data) {
-            let obj = JSON.parse(data);
-
-            const { command, ...rest } = obj;
-            // console.log('onMessage', command, rest);
-            const { connect = true, address = '127.0.0.1:' + Math.round(Math.random() * (65535 - 1024)) + 1024, args = [] } = rest;
-
-            switch (command) {
-              case 'start': {
-                child = ws.child = StartDebugger(args, connect, address);
-                const [, stdout, stderr] = child.stdio;
-                for(let fd of [stdout, stderr]) {
-                  //console.log(`fcntl(${fd}, F_GETFL)`);
-                  let flags = fcntl(fd, F_GETFL);
-                  //console.log(`fcntl(${fd}, F_SETFL, 0x${flags.toString(16)})`);
-                  flags |= O_NONBLOCK;
-                  fcntl(fd, F_SETFL, flags);
-                }
-                for(let i = 1; i <= 2; i++) {
-                  let fd = child.stdio[i];
-                  console.log('os.setReadHandler', fd);
-                  os.setReadHandler(fd, () => {
-                    let buf = new ArrayBuffer(1024);
-                    let r = os.read(fd, buf, 0, buf.byteLength);
-
-                    if(r > 0) {
-                      let data = toString(buf.slice(0, r));
-                      console.log(`read(${fd}, buf) = ${r} (${quote(data, "'")})`);
-
-                      ws.sendMessage({
-                        type: 'output',
-                        channel: ['stdout', 'stderr'][i - 1],
-                        data
-                      });
-                    }
-                  });
-                }
-                console.log('child', child.pid);
-
-                os.sleep(1000);
-              }
-              case 'connect': {
-                dbg = ws.dbg = ConnectDebugger(address, (dbg, sock) => {
-                  console.log('wait() =', child.wait());
-                  console.log('child', child);
-                });
-                os.setWriteHandler(+dbg, async () => {
-                  os.setWriteHandler(+dbg, null);
-                  console.log(`connected to ${address}`, dbg);
-
-                  sockets.add(dbg);
-
-                  const cwd = process.cwd();
-                  ws.sendMessage({
-                    type: 'response',
-                    response: {
-                      command: 'start',
-                      args,
-                      cwd,
-                      address
-                    }
-                  });
-
-                  let msg;
-
-                  while(dbg.open) {
-                    try {
-                      msg = await DebuggerProtocol.read(dbg);
-                      console.log('DebuggerProtocol.read() =', escape(msg));
-                      if(typeof msg == 'string') {
-                        let ret;
-                        ret = ws.send(msg);
-                        console.log(`ws.send(${quote(msg, "'")}) = ${ret}`);
-                      } else {
-                        console.log('closed socket', dbg);
-                        sockets.delete(dbg);
-                        ws.sendMessage({
-                          type: 'end',
-                          reason: 'closed'
-                        });
-                      }
-                    } catch(error) {
-                      const { message, stack } = error;
-                      ws.sendMessage({
-                        type: 'error',
-                        error: { message, stack }
-                      });
-                      dbg.close();
-                      break;
-                    }
-                    if(msg === null) break;
-                  }
-                });
-                console.log('dbg', dbg);
-                break;
-              }
-              case 'file': {
-                const { path } = rest;
-                const data = fs.readFileSync(path, 'utf-8');
-                //ws.send(JSON.stringify({ type: 'response', response: { command: 'file', path, data } }));
-
-                const lexer = new Lexer(data, path);
-                console.log('lexer', lexer);
-                const lines = [];
-
-                for(;;) {
-                  const { pos, size } = lexer;
-                  console.log('lexer', { pos, size });
-                  let result = lexer.next();
-                  if(result.done) break;
-                  const token = result.value;
-                  console.log('token', {
-                    lexeme: token.lexeme,
-                    id: token.id,
-                    loc: token.loc + ''
-                  });
-                  const { type, id, lexeme, loc } = token;
-                  const { line, column, file } = loc;
-                  //console.log('token', {lexeme,id,line});
-
-                  if(!lines[line - 1]) lines.push([]);
-                  let a = lines[line - 1];
-                  a.push([lexeme, id]);
-                }
-                console.log('lines', lines);
-                break;
-              }
-              default: {
-                console.log('send to debugger', data);
-                DebuggerProtocol.send(dbg, data);
-                break;
-              }
-            }
-          }
-          /*let p = new DebuggerProtocol();
-        protocol.set(ws, p);*/
+          let { onward } = ws;
+          let buf = toArrayBuffer(data);
+          console.log('onMessage', { data, buf });
+          let ret = os.write(onward.fd, buf, 0, buf.byteLength);
+          console.log('written', ret);
         },
         onFd(fd, rd, wr) {
           os.setReadHandler(fd, rd);

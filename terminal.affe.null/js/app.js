@@ -7,6 +7,7 @@
 /* Called by launch-telnet.js */
 function main() {
   var overlay = document.getElementById('input-overlay');
+  var controlIndicator = document.getElementById('input-control');
 
   if(!localStorage.fgColor) localStorage.fgColor = 'white';
   if(!localStorage.bgColor) localStorage.bgColor = 'black';
@@ -404,11 +405,13 @@ function main() {
     /* Connection started, now you can send data */
     window.onkeydown = function(e) {
       function send() {
-        if(control) {
-          control = false;
-          telnetSend(ctrl(keys[currentKey][currentKeyIndex]));
-        } else {
-          telnetSend(uc ? keys[currentKey][currentKeyIndex].toUpperCase() : keys[currentKey][currentKeyIndex]);
+        if(currentKey != -1 && keys[currentKey] && keys[currentKey][currentKeyIndex]) {
+          if(control) {
+            control = false;
+            telnetSend(ctrl(keys[currentKey][currentKeyIndex]));
+          } else {
+            telnetSend(uc ? keys[currentKey][currentKeyIndex].toUpperCase() : keys[currentKey][currentKeyIndex]);
+          }
         }
         currentKeyIndex = 0;
         currentKey = -1;
@@ -428,9 +431,10 @@ function main() {
         sendTimeoutId && clearTimeout(sendTimeoutId);
         sendTimeoutId = setTimeout(send, 1000);
       }
-
-      ShowOverlay(keys[currentKey].join(''), currentKeyIndex);
-
+      if(currentKey != -1 && keys[currentKey]) {
+        let a = keys[currentKey];
+        ShowOverlay(a.join(''), currentKeyIndex);
+      }
       if(e.key == 'Backspace') {
         e.preventDefault();
         if(currentKey >= 0) {
@@ -439,26 +443,33 @@ function main() {
           clearTimeout(sendTimeoutId);
           currentKeyIndex = 0;
           currentKey = -1;
-        } else telnetSend('\b');
+        } else {
+          telnetSend('\x08');
+          ShowOverlay('Backspace');
+        }
       }
       if(e.key == 'Enter') {
         if(currentKey >= 0) send();
         telnetSend('\n');
+        ShowOverlay('Enter');
       }
       if(e.key == 'Call') {
         /* Toggle control */
         if(currentKey >= 0) send();
         control = !control;
+controlIndicator.style.setProperty('display', control ? 'block' : 'none');
       }
       if(e.key == 'SoftLeft') {
         /* Tab */
         if(currentKey >= 0) send();
         telnetSend('\t');
+        ShowOverlay('Tab');
       }
       if(e.key == '#') {
         /* Toggle uppercase */
         if(currentKey >= 0) send();
         uc = !uc;
+        if(uc) ShowOverlay('UC');
       }
       if(e.key == '*') {
         /* Options */
@@ -482,24 +493,26 @@ function main() {
             telnetSend('\x1b' + k + 'C');
             break;
         }
+        ShowOverlay(e.key.replace('Arrow', ''));
+      }
+
+      function ShowOverlay(text, highlight) {
+        const setDisplay = value => overlay.style.setProperty('display', value);
+
+        setDisplay('block');
+
+        function tag(i) {
+          return i == highlight ? 'u' : 'span';
+        }
+
+        overlay.innerHTML =  text.split('').reduce((s, ch, i) => s + `<${tag(i)}>${ch}</${tag(i)}>`, '');
+        typeof overlayTimeoutId == 'number' && clearTimeout(overlayTimeoutId);
+        overlayTimeoutId = setTimeout(() => {
+          setDisplay('none');
+          overlay.innerHTML = '';
+        }, 3000);
       }
     };
   };
-  var overlayTimeoutId;
-
-  function ShowOverlay(text, highlight) {
-    //console.log('ShowOverlay', { overlay, text });
-    overlay.style.setProperty('display', 'block');
-
-    function tag(i) {
-      return i == highlight ? 'u' : 'span';
-    }
-
-    overlay.innerHTML = text.split('').reduce((s, ch, i) => s + `<${tag(i)}>${ch}</${tag(i)}>`, '');
-    typeof overlayTimeoutId == 'number' && clearTimeout(overlayTimeoutId);
-    overlayTimeoutId = setTimeout(() => {
-      overlay.style.setProperty('display', 'none');
-      overlay.innerHTML = '';
-    }, 3000);
-  }
 }
+var overlayTimeoutId;
